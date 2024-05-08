@@ -22,13 +22,15 @@ def run_bigquery_query():
 def interact_with_openai(results_list):
     # Azure OpenAI クライアントの初期化
 
+    client = bigquery.Client()
+
     name = f"projects/zuu-infra/secrets/my-secret/versions/3"
 
     # シークレットのバージョンを取得
     response = client.access_secret_version(request={"name": name})
     secret_value = response.payload.data.decode("UTF-8")
 
-    client = AzureOpenAI(
+    azure_client = AzureOpenAI(
         azure_endpoint="https://zuu-pdev-us2.openai.azure.com/",
         api_key=secret_value,
         api_version="2024-02-15-preview"
@@ -41,7 +43,7 @@ def interact_with_openai(results_list):
     ]
 
     # OpenAI APIを呼び出し
-    completion = client.chat.completions.create(
+    completion = azure_client.chat.completions.create(
         model="gpt4-turbo-saino01",  # モデル名はデプロイメント名に置き換え
         messages=message_text,
         temperature=0.7,
@@ -93,5 +95,6 @@ def main(request):
     # OpenAIによるデータ処理
     answer = interact_with_openai(bigquery)
     #interact_with_openai(results)
-    return_to_bigquey(answer)
+    print(answer)
+    #return_to_bigquey(answer)
     return "エラーなく完了しました。"

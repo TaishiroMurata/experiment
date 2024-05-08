@@ -7,7 +7,6 @@ terraform {
   }
 }
 
-
 provider "google" {
   project     = "zuu-infra"
   region      = "asia-northeast1"
@@ -17,16 +16,16 @@ resource "random_id" "default" {
   byte_length = 8
 }
 
-resource "google_storage_bucket" "default" {
-  name                        = "${random_id.default.hex}-gcf-source"
-  location                    = "asia-northeast1"
-  uniform_bucket_level_access = true
-}
-
 data "archive_file" "default" {
   type        = "zip"
   output_path = "./main.zip"
   source_dir  = "./src"
+}
+
+resource "google_storage_bucket" "default" {
+  name                        = "${random_id.default.hex}-gcf-source"
+  location                    = "asia-northeast1"
+  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_object" "object" {
@@ -34,6 +33,7 @@ resource "google_storage_bucket_object" "object" {
   bucket = google_storage_bucket.default.name
   source = "/Users/taishiro.murata/learn-terraform-gcp/main.zip"
 }
+
 
 resource "google_cloudfunctions2_function" "default" {
   name        = "function-v4"
