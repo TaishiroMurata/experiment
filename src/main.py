@@ -4,6 +4,7 @@ from google.cloud import bigquery
 from openai import AzureOpenAI
 import openai
 
+#bigqueyからデータを引っ張ってくる
 def run_bigquery_query():
     
     """BigQueryでクエリを実行し、結果を表示する関数"""
@@ -17,12 +18,14 @@ def run_bigquery_query():
     query_job = client.query(query)
     results_list = [{ "title": row['title'], "category": row['category']} for row in query_job]
     print(results_list)
+
     return results_list
 
+#取得したデータをAzureのOpenAIサービスに投げる
 def interact_with_openai(results_list):
-    # Azure OpenAI クライアントの初期化
 
-    client = bigquery.Client()
+    #シークレットマネージャーの取得
+    client = secretmanager.SecretManagerServiceClient()
 
     name = f"projects/zuu-infra/secrets/my-secret/versions/3"
 
@@ -56,9 +59,12 @@ def interact_with_openai(results_list):
 
     return completion['choices'][0]['text']
 
+#それをbigqueryに投げてテーブルの作成をする
 def return_to_bigquey(api_answer):
+
     client = bigquery.Client()
-        # データセットの設定
+
+    # データセットの設定
     dataset_id = "{}.your_new_dataset".format(client.project)
     dataset = bigquery.Dataset(dataset_id)
     dataset.location = "US"
@@ -73,13 +79,13 @@ def return_to_bigquey(api_answer):
         bigquery.SchemaField("title", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("category", "STRING", mode="REQUIRED"),  # データ型をSTRINGに修正
     ]
-
     table = bigquery.Table(table_id, schema=schema)
 
     # テーブルの作成
     table = client.create_table(table)
     print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
 
+    #取得したデータをテーブルに挿入するデータに挿入する
     rows_to_insert = api_answer
 
     # データの挿入
@@ -90,11 +96,16 @@ def return_to_bigquey(api_answer):
         print("Encountered errors while inserting rows: {}".format(errors)) 
 
 def main(request):
+
     # BigQueryでクエリを実行
     bigquery = run_bigquery_query()
+
     # OpenAIによるデータ処理
     answer = interact_with_openai(bigquery)
+
     #interact_with_openai(results)
     print(answer)
+
+    #bigqueryにデータを返す
     #return_to_bigquey(answer)
     return "エラーなく完了しました。"
