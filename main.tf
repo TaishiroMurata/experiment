@@ -19,8 +19,14 @@ resource "random_id" "default" {
 
 resource "google_storage_bucket" "default" {
   name                        = "${random_id.default.hex}-gcf-source"
-  location                    = "US"
+  location                    = "asia-northeast1"
   uniform_bucket_level_access = true
+}
+
+data "archive_file" "default" {
+  type        = "zip"
+  output_path = "./main.zip"
+  source_dir  = "./src"
 }
 
 resource "google_storage_bucket_object" "object" {
@@ -36,7 +42,7 @@ resource "google_cloudfunctions2_function" "default" {
 
   build_config {
     runtime     = "python39"
-    entry_point = "return_hello"
+    entry_point = "main"
     source {
       storage_source {
         bucket = google_storage_bucket.default.name

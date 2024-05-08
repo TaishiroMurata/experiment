@@ -4,9 +4,6 @@ from google.cloud import bigquery
 from openai import AzureOpenAI
 import openai
 
-def return_hello():
-    return "Hello"
-
 def run_bigquery_query():
     
     """BigQueryでクエリを実行し、結果を表示する関数"""
@@ -57,9 +54,44 @@ def interact_with_openai(results_list):
 
     return completion['choices'][0]['text']
 
+def return_to_bigquey(api_answer):
+    client = bigquery.Client()
+        # データセットの設定
+    dataset_id = "{}.your_new_dataset".format(client.project)
+    dataset = bigquery.Dataset(dataset_id)
+    dataset.location = "US"
+
+    # データセットの作成
+    dataset = client.create_dataset(dataset, timeout=30)
+    print("Created dataset {}.{}".format(client.project, dataset.dataset_id))
+
+    # テーブルの設定
+    table_id = "{}.{}.your_new_table".format(client.project, dataset.dataset_id)
+    schema = [
+        bigquery.SchemaField("title", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("category", "STRING", mode="REQUIRED"),  # データ型をSTRINGに修正
+    ]
+
+    table = bigquery.Table(table_id, schema=schema)
+
+    # テーブルの作成
+    table = client.create_table(table)
+    print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
+
+    rows_to_insert = api_answer
+
+    # データの挿入
+    errors = client.insert_rows_json(table, rows_to_insert)
+    if errors == []:
+        print("New rows have been added.")
+    else:
+        print("Encountered errors while inserting rows: {}".format(errors)) 
+
 def main(request):
     # BigQueryでクエリを実行
     bigquery = run_bigquery_query()
     # OpenAIによるデータ処理
+    answer = interact_with_openai(bigquery)
     #interact_with_openai(results)
+    return_to_bigquey(answer)
     return "エラーなく完了しました。"
