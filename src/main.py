@@ -46,7 +46,7 @@ def interact_with_openai(results_list):
     ]
 
     # OpenAI APIを呼び出し
-    completion = azure_client.chat.completions.create(
+    response = azure_client.chat.completions.create(
         model="gpt4-turbo-saino01",  # モデル名はデプロイメント名に置き換え
         messages=message_text,
         temperature=0.7,
@@ -57,9 +57,9 @@ def interact_with_openai(results_list):
         stop=None
     )
 
-    print(response.choices[0].message.content)
+    print(response.model_dump_json(indent=2))
 
-    return response.choices[0].message.content
+    return response.model_dump_json(indent=2)
 
 #それをbigqueryに投げてテーブルの作成をする
 def return_to_bigquey(api_answer):
@@ -67,16 +67,16 @@ def return_to_bigquey(api_answer):
     client = bigquery.Client()
 
     # データセットの設定
-    dataset_id = "{}.your_new_dataset".format(client.project)
+    dataset_id = "{}.my_new_dataset".format(client.project)
     dataset = bigquery.Dataset(dataset_id)
-    dataset.location = "US"
+    dataset.location = "asia-northeast1"
 
     # データセットの作成
     dataset = client.create_dataset(dataset, timeout=30)
     print("Created dataset {}.{}".format(client.project, dataset.dataset_id))
 
     # テーブルの設定
-    table_id = "{}.{}.your_new_table".format(client.project, dataset.dataset_id)
+    table_id = "{}.{}.my_new_table".format(client.project, dataset.dataset_id)
     schema = [
         bigquery.SchemaField("title", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("category", "STRING", mode="REQUIRED"),  # データ型をSTRINGに修正
