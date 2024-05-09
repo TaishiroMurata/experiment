@@ -3,6 +3,7 @@ from google.cloud import secretmanager
 from google.cloud import bigquery
 from openai import AzureOpenAI
 import openai
+import json
 
 #bigqueyからデータを引っ張ってくる
 def run_bigquery_query():
@@ -41,7 +42,7 @@ def interact_with_openai(results_list):
 
     # OpenAIに送るシステムメッセージで、リスト内のtitleだけを取り出すように指示
     message_text = [
-        {"role": "system", "content": "Given the following data, extract only the titles and return them as an array."},
+        {"role": "system", "content": "配列を一つ渡します。その配列のtitleを要約してください。categoryはそのままで大丈夫です。配列の形で返してください。返すのは配列だけで大丈夫です。特に言葉は入りません。"},
         {"role": "user", "content": str(results_list)}
     ]
 
@@ -56,18 +57,28 @@ def interact_with_openai(results_list):
         presence_penalty=0,
         stop=None
     )
+    print(response)
+    print(response.choices[0].message.content)
 
-    print(response.model_dump_json(indent=2))
+    data = response.choices[0].message.content
 
-    return response.model_dump_json(indent=2)
+
+    # JSONとして読み込み可能な形式に変換（シングルクォートをダブルクォートに置換）
+    data_str = data.replace("'", '"')
+
+    # 文字列をPythonのリストに変換
+    data_list = json.loads(data_str)
+
+    return data_list
+    
 
 #それをbigqueryに投げてテーブルの作成をする
-def return_to_bigquey(api_answer):
+def return_to_bigquey(answer):
 
     client = bigquery.Client()
 
     # データセットの設定
-    dataset_id = "{}.my_new_dataset".format(client.project)
+    dataset_id = "{}.onew_dataset".format(client.project)
     dataset = bigquery.Dataset(dataset_id)
     dataset.location = "asia-northeast1"
 
@@ -76,7 +87,7 @@ def return_to_bigquey(api_answer):
     print("Created dataset {}.{}".format(client.project, dataset.dataset_id))
 
     # テーブルの設定
-    table_id = "{}.{}.my_new_table".format(client.project, dataset.dataset_id)
+    table_id = "{}.{}.onew_table".format(client.project, dataset.dataset_id)
     schema = [
         bigquery.SchemaField("title", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("category", "STRING", mode="REQUIRED"),  # データ型をSTRINGに修正
@@ -88,7 +99,7 @@ def return_to_bigquey(api_answer):
     print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
 
     #取得したデータをテーブルに挿入するデータに挿入する
-    rows_to_insert = api_answer
+    rows_to_insert = answer
 
     # データの挿入
     errors = client.insert_rows_json(table, rows_to_insert)

@@ -8,12 +8,8 @@ terraform {
 }
 
 provider "google" {
-  project     = "zuu-infra"
-  region      = "asia-northeast1"
-}
-
-resource "random_id" "default" {
-  byte_length = 8
+  project = "zuu-infra"
+  region  = "asia-northeast1"
 }
 
 data "archive_file" "default" {
@@ -23,13 +19,13 @@ data "archive_file" "default" {
 }
 
 resource "google_storage_bucket" "default" {
-  name                        = "${random_id.default.hex}-gcf-source"
+  name                        = "murata-gcf-source"
   location                    = "asia-northeast1"
   uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_object" "object" {
-  name   = "main.zip"
+  name   = "${data.archive_file.default.output_md5}.zip"
   bucket = google_storage_bucket.default.name
   source = "/Users/taishiro.murata/learn-terraform-gcp/main.zip"
 }
@@ -51,12 +47,12 @@ resource "google_cloudfunctions2_function" "default" {
     }
   }
 
-service_config {
-    max_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
+  service_config {
+    max_instance_count    = 1
+    available_memory      = "256M"
+    timeout_seconds       = 60
     service_account_email = "biwa-tutorial@zuu-infra.iam.gserviceaccount.com"
-    }
+  }
 }
 
 resource "google_cloud_run_service_iam_member" "member" {
