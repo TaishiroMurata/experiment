@@ -55,6 +55,7 @@ service_config {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
+    service_account_email = "biwa-tutorial@zuu-infra.iam.gserviceaccount.com"
     }
 }
 

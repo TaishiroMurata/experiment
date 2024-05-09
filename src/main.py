@@ -28,7 +28,7 @@ def interact_with_openai(results_list):
     client = secretmanager.SecretManagerServiceClient()
 
     name = f"projects/zuu-infra/secrets/my-secret/versions/3"
-
+    
     # シークレットのバージョンを取得
     response = client.access_secret_version(request={"name": name})
     secret_value = response.payload.data.decode("UTF-8")
@@ -57,7 +57,9 @@ def interact_with_openai(results_list):
         stop=None
     )
 
-    return completion['choices'][0]['text']
+    print(response.choices[0].message.content)
+
+    return response.choices[0].message.content
 
 #それをbigqueryに投げてテーブルの作成をする
 def return_to_bigquey(api_answer):
@@ -103,9 +105,7 @@ def main(request):
     # OpenAIによるデータ処理
     answer = interact_with_openai(bigquery)
 
-    #interact_with_openai(results)
-    print(answer)
-
     #bigqueryにデータを返す
-    #return_to_bigquey(answer)
+    return_to_bigquey(answer)
+
     return "エラーなく完了しました。"
